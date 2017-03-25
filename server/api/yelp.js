@@ -1,24 +1,36 @@
-const Yelp = require('yelpv3');
-
-const yelp = new Yelp({
-  app_id: process.env.YELP_APP_ID,
-  app_secret: process.env.YELP_APP_SECRET
-})
+const Yelp = require('yelp-fusion');
+const yelp = Yelp.client(process.env.YELP_TOKEN);
+const Categories = require('./../db/Categories.js');
 
 module.exports = {
   fetch: function(queryWithFilters) {
-    let searchObj = {
+    let search = {
       term: 'attractions',
+      categories: null,
       location: queryWithFilters.query,
-      limit: 20
+      limit: 20,
+      // price: '1,2,3,4' // this will return all price range businesses, but only "businesses"
     };
 
     return new Promise(function(resolve, reject) {
-      yelp.search(searchObj).then(data => resolve(formatData(data)))
-      .catch(err => reject(err));
+      Categories.find({ '_id': { $in: queryWithFilters.filters } }, 'associated_tags.Yelp', function(err, category) {
+        if (err) return handleError(err);
+        //category is an array of objects
+        var arrayFilters = [];
+        category.forEach(function(item) {
+          arrayFilters = arrayFilters.concat(item.associated_tags.Yelp);
+        });
+          search.categories = arrayFilters.join(',');
+          resolve();
+      });
+    }).then(function(argument){
+      return new Promise (function(resolve, reject) {
+        yelp.search(search).then(res => resolve(formatData(res.body)))
+        .catch(err => reject(err));
+      });
     });
   }
-};
+}
 
 let formatData = apiResult => {
   let locations = JSON.parse(apiResult).businesses;
@@ -41,12 +53,12 @@ let formatData = apiResult => {
       },
       phone_number: currentLocation.phone,
       rating: currentLocation.rating,
+      price: currentLocation.price ? currentLocation.price : 'free', // maybe need to set to null?
       neighborhood: null,
       isClosed: currentLocation.is_closed,
       api_reference: {
-        'yelp': {
-          reference_id: currentLocation.id
-        }  
+        api: 'Yelp',
+        reference_id: currentLocation.id
       }
     };
     results.push(currentSubResult);
