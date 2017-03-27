@@ -4,46 +4,23 @@ import ActivityView from './ActivityView.jsx'
 
 export default class ShortlistView extends React.Component {
   constructor(props) {
-    super(props)
-    this.handleClick = this.handleClick.bind(this);
-  }
-
-  handleClick() {
-    let formData = {
-      completed: true,
-      query: {
-        id: '0107e2b8-f3ab-4081-8c0d-c98b53bdc9e6'
-      }
-    }
-    $.ajax({
-      url: '/shortlist', 
-      method: 'POST',
-      contentType: 'application/json',
-      data: JSON.stringify(formData),
-      success: (data) => {
-        console.log(data);
-      },
-      error: (err) => {
-        console.log('err', err);
-      }
-    });
+    super(props);
   }
 
   render() {
     return (
-      <div className="eight wide column">
+      <div className="sixteen wide column">
         <h1>ShortList</h1>
         Shortlisted { this.props.shortlisted && this.props.shortlisted.length } activities.
-        <button onClick={ this.handleClick } >Done shortlisting</button>
         {
-          this.props.data &&
-          this.props.data.map(item => (
-            <ActivityView
-              key= { item._id }
-              activity={ item }
-              shortlist={ this.props.shortlist }
-              discard={ this.props.discard } />
-          ))
+          this.props.currentActivity &&
+          <ActivityView
+            key={ this.props.currentActivity._id }
+            activity={ this.props.currentActivity }
+            photos={ this.props.photos }
+            shortlist={ this.props.shortlist }
+            discard={ this.props.discard }
+            showGallery={ this.props.showGallery } />
         }
       </div>
     )
